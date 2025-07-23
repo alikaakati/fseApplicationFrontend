@@ -33,10 +33,6 @@ const Home = () => {
   const [error, setError] = useState<string | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
-  useEffect(() => {
-    console.log(categories);
-  }, [categories]);
-
   // Load period dates on component mount
   useEffect(() => {
     const loadPeriodDates = async () => {
