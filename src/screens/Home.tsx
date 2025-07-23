@@ -7,7 +7,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Chip,
   OutlinedInput,
   Stack,
   Typography,

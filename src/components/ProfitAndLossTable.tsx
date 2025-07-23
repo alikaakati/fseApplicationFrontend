@@ -1,5 +1,5 @@
 // src/components/ProfitLossTable.tsx
-import React, { useState, Fragment, useEffect } from "react";
+import React, { useState, Fragment } from "react";
 import {
   Box,
   Collapse,
@@ -13,7 +13,6 @@ import {
   TableRow,
   Typography,
   Stack,
-  Divider,
 } from "@mui/material";
 import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
 import { Category, LineItem } from "../services/api";

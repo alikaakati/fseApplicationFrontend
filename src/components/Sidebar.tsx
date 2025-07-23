@@ -8,11 +8,9 @@ import {
 } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const Sidebar = () => {
-  const location = useLocation();
-
   const menuItems = [
     { text: "Home", icon: <HomeIcon />, path: "/" },
     { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
