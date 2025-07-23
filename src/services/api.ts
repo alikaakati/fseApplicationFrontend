@@ -21,7 +21,6 @@ export interface PeriodDate {
 
 export interface LineItem {
   id: number;
-  originalName: string;
   name: string;
   value: string;
   accountId: number | null;

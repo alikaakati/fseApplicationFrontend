@@ -28,7 +28,7 @@ const LineItemRow: React.FC<{ lineItem: LineItem }> = ({ lineItem }) => {
   return (
     <TableRow>
       <TableCell />
-      <TableCell>{lineItem.originalName}</TableCell>
+      <TableCell>{lineItem.name}</TableCell>
       <TableCell align="right">
         ${parseFloat(lineItem.value).toFixed(2)}
       </TableCell>
