@@ -12,6 +12,8 @@ import {
   Typography,
   Button,
   Snackbar,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import { Refresh as RefreshIcon } from "@mui/icons-material";
 import ProfitLossTable from "../components/ProfitAndLossTable";
@@ -25,13 +27,14 @@ interface Company {
 const Home = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [periodDates, setPeriodDates] = useState<PeriodDate[]>([]);
-  const [selectedPeriodIds, setSelectedPeriodIds] = useState<string>("");
+  const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | "">("");
   const [loading, setLoading] = useState(true);
   const [loadingPnl, setLoadingPnl] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [isConsolidated, setIsConsolidated] = useState(false);
 
   // Load period dates on component mount
   useEffect(() => {
@@ -55,7 +58,7 @@ const Home = () => {
   // Load P&L data when selected periods change
   useEffect(() => {
     const loadPnlData = async () => {
-      if (!selectedPeriodIds) {
+      if (!selectedPeriodId) {
         setCategories([]);
         return;
       }
@@ -64,9 +67,23 @@ const Home = () => {
         setLoadingPnl(true);
         setError(null);
 
-        // Fetch P&L data for the selected period
-        const pnlData = await apiService.getPnlData(selectedPeriodIds);
-        setCategories(pnlData);
+        if (isConsolidated) {
+          // For consolidated view, get the selected period dates and call the date range API
+          const selectedPeriod = periodDates.find(
+            (period) => period.id === selectedPeriodId
+          );
+          if (selectedPeriod) {
+            const pnlData = await apiService.getPnlDataByDateRange(
+              selectedPeriod.startDate,
+              selectedPeriod.endDate
+            );
+            setCategories(pnlData);
+          }
+        } else {
+          // For regular view, fetch P&L data for the selected period
+          const pnlData = await apiService.getPnlData(selectedPeriodId);
+          setCategories(pnlData);
+        }
       } catch (err) {
         setError("Failed to load P&L data for the selected periods");
         console.error("Error loading P&L data:", err);
@@ -76,18 +93,36 @@ const Home = () => {
     };
 
     loadPnlData();
-  }, [selectedPeriodIds]);
+  }, [selectedPeriodId, isConsolidated, periodDates]);
 
   const handleCompanyChange = (event: any) => {
     const companyId = event.target.value;
     setSelectedCompanyId(companyId);
     // Reset period selection when company changes
-    setSelectedPeriodIds("");
+    setSelectedPeriodId("");
   };
 
   const handlePeriodChange = (event: any) => {
     const value = event.target.value;
-    setSelectedPeriodIds(value);
+    setSelectedPeriodId(value);
+  };
+
+  const handleConsolidatedChange = (event: any) => {
+    const checked = event.target.checked;
+    setIsConsolidated(checked);
+
+    if (checked) {
+      // When consolidated is checked, select the first company and reset period
+      const firstCompany = companies[0];
+      if (firstCompany) {
+        setSelectedCompanyId(firstCompany.id);
+      }
+      setSelectedPeriodId("");
+    } else {
+      // When unchecked, reset selections
+      setSelectedCompanyId("");
+      setSelectedPeriodId("");
+    }
   };
 
   const handleRefresh = async () => {
@@ -102,7 +137,7 @@ const Home = () => {
         // Reload period dates after successful refresh
         const dates = await apiService.getPeriodDates();
         setPeriodDates(dates);
-        setSelectedPeriodIds("");
+        setSelectedPeriodId("");
       } else {
         setError("Failed to refresh data");
       }
@@ -167,7 +202,9 @@ const Home = () => {
         }}
       >
         <Typography variant="h5" gutterBottom>
-          Profit & Loss Reports
+          {isConsolidated
+            ? "Consolidated Profit & Loss Reports"
+            : "Profit & Loss Reports"}
         </Typography>
         <Button
           variant="outlined"
@@ -185,41 +222,58 @@ const Home = () => {
         <Typography variant="h6" gutterBottom>
           Select Company and Report Period
         </Typography>
+
+        {/* Consolidated Checkbox */}
+        <Box sx={{ mb: 2 }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={isConsolidated}
+                onChange={handleConsolidatedChange}
+                color="primary"
+              />
+            }
+            label="Consolidated View"
+          />
+        </Box>
+
         <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-          <Box sx={{ flex: "1 1 300px", minWidth: 0 }}>
-            <FormControl fullWidth>
-              <InputLabel id="company-select-label">Company</InputLabel>
-              <Select
-                labelId="company-select-label"
-                value={selectedCompanyId}
-                onChange={handleCompanyChange}
-                input={<OutlinedInput label="Company" />}
-              >
-                <MenuItem value="">
-                  <em>All Companies</em>
-                </MenuItem>
-                {companies.map((company) => (
-                  <MenuItem key={company.id} value={company.id}>
-                    {company.name}
+          {!isConsolidated && (
+            <Box sx={{ flex: "1 1 300px", minWidth: 0 }}>
+              <FormControl fullWidth>
+                <InputLabel id="company-select-label">Company</InputLabel>
+                <Select
+                  labelId="company-select-label"
+                  value={selectedCompanyId}
+                  onChange={handleCompanyChange}
+                  input={<OutlinedInput label="Company" />}
+                >
+                  <MenuItem value="">
+                    <em>All Companies</em>
                   </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
+                  {companies.map((company) => (
+                    <MenuItem key={company.id} value={company.id}>
+                      {company.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          )}
           <Box sx={{ flex: "1 1 300px", minWidth: 0 }}>
             <FormControl fullWidth>
               <InputLabel id="period-select-label">Period</InputLabel>
               <Select
                 labelId="period-select-label"
-                value={selectedPeriodIds}
+                value={selectedPeriodId}
                 onChange={handlePeriodChange}
                 input={<OutlinedInput label="Period" />}
                 disabled={!selectedCompanyId}
               >
                 {filteredPeriods.map((period) => (
                   <MenuItem key={period.id} value={period.id}>
-                    {period.startDate} → {period.endDate} -{" "}
-                    {period.company.name}
+                    {period.startDate} → {period.endDate}
+                    {!isConsolidated && ` - ${period.company.name}`}
                   </MenuItem>
                 ))}
               </Select>
@@ -229,7 +283,7 @@ const Home = () => {
       </Box>
 
       {/* P&L Table */}
-      {selectedPeriodIds && (
+      {selectedPeriodId && (
         <Box>
           {loadingPnl ? (
             <Box
@@ -244,17 +298,17 @@ const Home = () => {
             <ProfitLossTable
               categories={categories}
               startDate={
-                periodDates.find((e) => e.id === selectedPeriodIds)?.startDate
+                periodDates.find((e) => e.id === selectedPeriodId)?.startDate
               }
               endDate={
-                periodDates.find((e) => e.id === selectedPeriodIds)?.endDate
+                periodDates.find((e) => e.id === selectedPeriodId)?.endDate
               }
             />
           )}
         </Box>
       )}
 
-      {!selectedPeriodIds && !loading && (
+      {!selectedPeriodId && !loading && (
         <Box
           display="flex"
           justifyContent="center"
@@ -264,6 +318,8 @@ const Home = () => {
           <Typography variant="body1" color="text.secondary">
             {!selectedCompanyId
               ? "Please select a company to view available periods"
+              : isConsolidated
+              ? "Please select a period to view consolidated P&L data"
               : "Please select a period to view P&L data"}
           </Typography>
         </Box>

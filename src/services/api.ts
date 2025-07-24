@@ -90,6 +90,22 @@ export const apiService = {
       throw error;
     }
   },
+
+  // Fetch P&L data by date range for consolidated view
+  getPnlDataByDateRange: async (
+    startDate: string,
+    endDate: string
+  ): Promise<Category[]> => {
+    try {
+      const response = await api.get(
+        `/data/categories/by-date-range?startDate=${startDate}&endDate=${endDate}`
+      );
+      return response.data.data;
+    } catch (error) {
+      console.error("Error fetching P&L data by date range:", error);
+      throw error;
+    }
+  },
 };
 
 export default apiService;
